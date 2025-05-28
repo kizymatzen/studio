@@ -5,6 +5,7 @@ import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 
 const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+console.log("Firebase API Key loaded:", apiKey); // Log the API key being used
 
 const firebaseConfig = {
   apiKey: apiKey,
@@ -29,6 +30,7 @@ if (!getApps().length) {
       "is correctly set up with your valid Firebase API key.\n" +
       "After updating the .env file, YOU MUST RESTART your development server.\n" +
       "Firebase will not be initialized until this is resolved.\n" +
+      "Current API Key read: " + firebaseConfig.apiKey + "\n" +
       "****************************************************************************************"
     );
     // app remains undefined, preventing Firebase from trying to initialize with a bad key
@@ -44,22 +46,34 @@ if (!getApps().length) {
   }
 } else {
   app = getApps()[0];
-  if (app.options.apiKey && !app.options.apiKey.includes("YOUR_") && app.options.apiKey !== "YOUR_API_KEY") {
+  // Check if the already initialized app is using a placeholder key
+  if (app.options.apiKey && (app.options.apiKey.includes("YOUR_") || app.options.apiKey === "YOUR_API_KEY")) {
+     console.error(
+      "****************************************************************************************\n" +
+      "ERROR: Firebase app was previously initialized but seems to be using a placeholder API key.\n" +
+      "This can happen if the .env file was not updated or the server was not restarted after changes.\n" +
+      "Current API Key in initialized app: " + app.options.apiKey + "\n" +
+      "Please ensure NEXT_PUBLIC_FIREBASE_API_KEY in .env is correct and restart the server.\n" +
+      "****************************************************************************************"
+    );
+    app = undefined; // Mark app as uninitialized for subsequent checks
+  } else if (app.options.apiKey) {
     console.log("Firebase app already initialized.");
   }
 }
 
-// Initialize Firebase services only if the app was successfully initialized
+// Initialize Firebase services only if the app was successfully initialized with a valid key
 if (app && app.options.apiKey && !app.options.apiKey.includes("YOUR_") && app.options.apiKey !== "YOUR_API_KEY") {
   auth = getAuth(app);
   db = getFirestore(app);
   storage = getStorage(app);
 } else {
-  if (!(!firebaseConfig.apiKey || firebaseConfig.apiKey.includes("YOUR_") || firebaseConfig.apiKey === "YOUR_API_KEY")) {
-    // Only log this warning if the initial error wasn't due to a placeholder API key
+  // Only log this warning if the initial error wasn't due to a placeholder API key
+  // (which would have already been logged with more detail)
+  if (!( !firebaseConfig.apiKey || firebaseConfig.apiKey.includes("YOUR_") || firebaseConfig.apiKey === "YOUR_API_KEY" )) {
     console.warn(
-      "Firebase app is not initialized. Firebase services (Auth, Firestore, Storage) will not be available. " +
-      "This might be due to an issue during initialization even if the API key was present."
+      "Firebase app is not initialized or uses an invalid API key. Firebase services (Auth, Firestore, Storage) will not be available. " +
+      "This might be due to an issue during initialization or an incorrect API key in .env."
     );
   }
   // Assign null to satisfy type strictness, other parts of the app should handle this.
