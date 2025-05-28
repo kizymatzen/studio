@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase/config';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { AuthForm } from '@/components/auth/auth-form';
 import type { SignupInput } from '@/lib/schemas';
 import { useToast } from '@/hooks/use-toast';
@@ -20,7 +21,10 @@ export default function SignupPage() {
       // Create user document in Firestore
       await setDoc(doc(db, 'users', user.uid), {
         email: user.email,
-        createdAt: new Date(),
+        displayName: user.displayName || null, // Store display name if available (usually not for email/pass)
+        photoURL: user.photoURL || null,     // Store photo URL if available
+        createdAt: serverTimestamp(),      // Use serverTimestamp for consistency
+        providerId: 'password', // Indicate email/password provider
       });
 
       toast({ title: 'Signup Successful', description: 'Welcome to Little Steps!'});
@@ -36,5 +40,8 @@ export default function SignupPage() {
     }
   };
 
+  // For now, OAuth is only on the login page. 
+  // If you want to add it to signup, pass the handlers like in login page.
   return <AuthForm isLogin={false} onSubmit={handleSignup} />;
 }
+
