@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -11,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button'; // Added Button import
 
 function LogBehaviorContent() {
   const router = useRouter();
@@ -102,3 +104,4 @@ export default function LogBehaviorPage() {
     </AppStateProvider>
   );
 }
+
