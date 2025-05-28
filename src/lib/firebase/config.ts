@@ -4,9 +4,7 @@ import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 
-// Log the API key to ensure it's being loaded
 const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-console.log('Firebase API Key loaded:', apiKey);
 
 const firebaseConfig = {
   apiKey: apiKey,
@@ -17,44 +15,60 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-let app: FirebaseApp;
-if (!getApps().length) {
-  if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY") {
-    console.error(
-      "Firebase API Key is not configured or is using a placeholder. " +
-      "Please ensure your .env file is correctly set up with valid Firebase credentials " +
-      "and that you have restarted the development server."
-    );
-    // To prevent Firebase from throwing its own error and show a more direct one in console
-    // We won't initialize if the key is obviously wrong.
-  }
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApps()[0];
-}
-
-// Ensure app is initialized before trying to get Auth, Firestore, Storage
-// This check is more for robustness, the main issue is likely the API key itself.
+let app: FirebaseApp | undefined = undefined;
 let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
 
-if (app && app.options && app.options.apiKey && app.options.apiKey !== "YOUR_API_KEY") {
+if (!getApps().length) {
+  if (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes("YOUR_") || firebaseConfig.apiKey === "YOUR_API_KEY") {
+    console.error(
+      "****************************************************************************************\n" +
+      "ERROR: Firebase API Key is missing, uses a placeholder, or is not correctly set.\n" +
+      "Please ensure that NEXT_PUBLIC_FIREBASE_API_KEY in your .env file (at the project root)\n" +
+      "is correctly set up with your valid Firebase API key.\n" +
+      "After updating the .env file, YOU MUST RESTART your development server.\n" +
+      "Firebase will not be initialized until this is resolved.\n" +
+      "****************************************************************************************"
+    );
+    // app remains undefined, preventing Firebase from trying to initialize with a bad key
+  } else {
+    // API key seems to be present and not a placeholder, attempt initialization
+    try {
+      app = initializeApp(firebaseConfig);
+      console.log("Firebase app initialized successfully."); // Log success
+    } catch (error) {
+      console.error("Firebase initialization failed even though API key seemed valid. Error:", error);
+      // app might be partially initialized or undefined, depending on the error
+    }
+  }
+} else {
+  app = getApps()[0];
+  if (app.options.apiKey && !app.options.apiKey.includes("YOUR_") && app.options.apiKey !== "YOUR_API_KEY") {
+    console.log("Firebase app already initialized.");
+  }
+}
+
+// Initialize Firebase services only if the app was successfully initialized
+if (app && app.options.apiKey && !app.options.apiKey.includes("YOUR_") && app.options.apiKey !== "YOUR_API_KEY") {
   auth = getAuth(app);
   db = getFirestore(app);
   storage = getStorage(app);
 } else {
-  // Provide dummy objects or handle the uninitialized state if necessary,
-  // though the app will likely fail elsewhere if Firebase isn't up.
-  // For now, this primarily highlights the API key issue.
-  console.error("Firebase app was not initialized correctly due to missing or placeholder API key.");
-  // @ts-ignore - Assigning null to satisfy type, knowing it will cause issues if used.
+  if (!(!firebaseConfig.apiKey || firebaseConfig.apiKey.includes("YOUR_") || firebaseConfig.apiKey === "YOUR_API_KEY")) {
+    // Only log this warning if the initial error wasn't due to a placeholder API key
+    console.warn(
+      "Firebase app is not initialized. Firebase services (Auth, Firestore, Storage) will not be available. " +
+      "This might be due to an issue during initialization even if the API key was present."
+    );
+  }
+  // Assign null to satisfy type strictness, other parts of the app should handle this.
+  // @ts-ignore
   auth = null;
   // @ts-ignore
   db = null;
   // @ts-ignore
   storage = null;
 }
-
 
 export { app, auth, db, storage };
