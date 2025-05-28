@@ -6,10 +6,20 @@
 import { AppStateProvider, useAppState } from '@/contexts/app-state-context'; // Import useAppState
 import { ChildSelector } from '@/components/dashboard/child-selector';
 import { RecentLogsList } from '@/components/dashboard/recent-logs-list';
-import { AddChildDialog } from '@/components/dashboard/add-child-dialog';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { PlusSquare } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Dynamically import AddChildDialog
+const AddChildDialog = dynamic(() => 
+  import('@/components/dashboard/add-child-dialog').then(mod => mod.AddChildDialog), 
+  { 
+    ssr: false, // Dialogs are typically client-side only
+    loading: () => <Skeleton className="h-10 w-[130px] rounded-md" /> // Approximate size of the "Add Child" button
+  }
+);
 
 function DashboardContent() {
   const { selectedChild, childrenLoading } = useAppState(); // Use context here
