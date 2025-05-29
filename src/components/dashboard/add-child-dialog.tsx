@@ -17,7 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { ChildSchema, type ChildInput } from '@/lib/schemas';
 import { useAuth } from '@/contexts/auth-context';
-import { db } from '@/lib/firebase/config';
+import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle } from 'lucide-react';

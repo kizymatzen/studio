@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/core/logo';
-import { auth } from '@/lib/firebase/config';
+import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { LogOut, UserCircle, Home } from 'lucide-react';
 

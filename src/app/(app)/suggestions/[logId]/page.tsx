@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
+import { db } from '@/lib/firebase';
 import type { BehaviorLog } from '@/types';
 import { selectStory, type SelectStoryOutput } from '@/ai/flows/select-story';
 import { selectActivity, type SelectActivityOutput } from '@/ai/flows/select-activity';

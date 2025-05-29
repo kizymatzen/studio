@@ -4,7 +4,7 @@ import type { ReactNode} from 'react';
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
+import { db } from '@/lib/firebase';
 import { useAuth } from './auth-context';
 
 export interface ChildProfile {

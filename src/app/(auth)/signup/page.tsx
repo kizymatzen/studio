@@ -3,7 +3,7 @@
 
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase/config';
+import { auth, db } from '@/lib/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { AuthForm } from '@/components/auth/auth-form';
 import type { SignupInput } from '@/lib/schemas';

@@ -10,7 +10,7 @@ import {
   type UserCredential,
   type AuthError 
 } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase/config';
+import { auth, db } from '@/lib/firebase';
 import { AuthForm } from '@/components/auth/auth-form';
 import type { LoginInput } from '@/lib/schemas';
 import { useToast } from '@/hooks/use-toast';

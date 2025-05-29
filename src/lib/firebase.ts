@@ -21,8 +21,11 @@ let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
 
+const isPlaceholderKey = (key: string | undefined): boolean =>
+  !key || key.includes("YOUR_") || key === "YOUR_API_KEY";
+
 if (!getApps().length) {
-  if (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes("YOUR_") || firebaseConfig.apiKey === "YOUR_API_KEY") {
+  if (isPlaceholderKey(firebaseConfig.apiKey)) {
     console.error(
       "****************************************************************************************\n" +
       "ERROR: Firebase API Key is missing, uses a placeholder, or is not correctly set.\n" +
@@ -47,7 +50,7 @@ if (!getApps().length) {
 } else {
   app = getApps()[0];
   // Check if the already initialized app is using a placeholder key
-  if (app.options.apiKey && (app.options.apiKey.includes("YOUR_") || app.options.apiKey === "YOUR_API_KEY")) {
+  if (isPlaceholderKey(app.options.apiKey as string | undefined)) {
      console.error(
       "****************************************************************************************\n" +
       "ERROR: Firebase app was previously initialized but seems to be using a placeholder API key.\n" +
@@ -63,14 +66,14 @@ if (!getApps().length) {
 }
 
 // Initialize Firebase services only if the app was successfully initialized with a valid key
-if (app && app.options.apiKey && !app.options.apiKey.includes("YOUR_") && app.options.apiKey !== "YOUR_API_KEY") {
+if (app && !isPlaceholderKey(app.options.apiKey as string | undefined)) {
   auth = getAuth(app);
   db = getFirestore(app);
   storage = getStorage(app);
 } else {
   // Only log this warning if the initial error wasn't due to a placeholder API key
   // (which would have already been logged with more detail)
-  if (!( !firebaseConfig.apiKey || firebaseConfig.apiKey.includes("YOUR_") || firebaseConfig.apiKey === "YOUR_API_KEY" )) {
+  if (!isPlaceholderKey(firebaseConfig.apiKey)) {
     console.warn(
       "Firebase app is not initialized or uses an invalid API key. Firebase services (Auth, Firestore, Storage) will not be available. " +
       "This might be due to an issue during initialization or an incorrect API key in .env."
