@@ -42,6 +42,7 @@ export function AddChildDialog() {
       return;
     }
     setIsSubmitting(true);
+    let submissionSuccessful = false;
     try {
       const db = getDbSafe();
       await addDoc(collection(db, 'children'), {
@@ -51,22 +52,26 @@ export function AddChildDialog() {
         professionalIds: [], // Initialize professionalIds as an empty array
       });
       toast({ title: 'Child Added', description: `${values.name} has been added to your profiles.` });
-      form.reset();
-      setIsSubmitting(false); // Reset submitting state before closing
-      setOpen(false);
+      submissionSuccessful = true;
+      form.reset(); // Reset form fields immediately after successful add
     } catch (error) {
       console.error('Error adding child:', error);
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to add child. Please try again.' });
-      setIsSubmitting(false); // Ensure submitting state is reset on error
+      submissionSuccessful = false;
+    } finally {
+      setIsSubmitting(false); // Always reset submitting state
+      if (submissionSuccessful) {
+        setOpen(false); // Close dialog only on successful submission
+      }
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
       setOpen(isOpen);
-      if (!isOpen) { // If dialog is closing, reset form and submitting state
-        form.reset();
-        setIsSubmitting(false);
+      if (!isOpen) { // If dialog is closing for any reason (programmatic or user action)
+        form.reset(); // Reset form on close
+        setIsSubmitting(false); // Explicitly reset submitting state on close
       }
     }}>
       <DialogTrigger asChild>
