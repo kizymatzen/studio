@@ -26,30 +26,32 @@ export interface UserProfile {
   photoURL: string | null;
   role: 'parent' | 'therapist' | 'teacher' | 'admin';
   membership: 'free' | 'pro';
-  childIds?: string[]; 
-  professionalIds?: string[]; 
-  linkedChildren?: string[]; 
-  linkedBy?: string; 
+  childIds?: string[];
+  professionalIds?: string[];
+  linkedChildren?: string[];
+  linkedBy?: string;
   storageUsed: number; // in MB
   storageLimit: number; // in MB
   createdAt: Timestamp;
   providerId?: string;
 }
 
+// Renamed from ChildProfile to ChildProfileFirestore to be specific about DB structure
 export interface ChildProfileFirestore {
   name: string;
   parentId: string;
-  professionalIds: string[]; // Initialized as empty array on creation
+  professionalIds: string[]; // Ensure this is present, even if empty array
   createdAt: Timestamp;
 }
 
+
 export interface DocumentMetadata {
-  id: string;
+  id: string; // Firestore document ID
   childId: string;
   ownerId: string; // UID of the parent who uploaded
-  docName: string;
+  docName: string; // User-facing document name (original filename)
   storagePath: string; // Full path in Firebase Storage
   fileType: string; // e.g., 'application/pdf'
   fileSize: number; // in bytes
-  uploadedAt: Timestamp;
+  uploadedAt: Timestamp; // Firestore Timestamp
 }

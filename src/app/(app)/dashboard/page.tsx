@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { DocumentList } from '@/components/dashboard/document-list';
+import { useState } from 'react';
 
 const AddChildDialog = dynamic(() =>
   import('@/components/dashboard/add-child-dialog').then(mod => mod.AddChildDialog),
@@ -21,9 +22,21 @@ const AddChildDialog = dynamic(() =>
   }
 );
 
+const UploadDocumentDialog = dynamic(() =>
+  import('@/components/dashboard/upload-document-dialog').then(mod => mod.UploadDocumentDialog),
+  {
+    ssr: false,
+    // You can add a specific skeleton for this if needed
+    loading: () => <Skeleton className="h-10 w-[170px] rounded-md" />
+  }
+);
+
+
 function DashboardContent() {
   const { selectedChild, childrenLoading } = useAppState();
   const { firestoreUser, loading: authLoading } = useAuth();
+  const [isUploadDocumentDialogOpen, setIsUploadDocumentDialogOpen] = useState(false);
+
 
   const isProMember = firestoreUser?.membership === 'pro';
   const professionalsCount = firestoreUser?.professionalIds?.length || 0;
@@ -127,17 +140,16 @@ function DashboardContent() {
             <div>
               <h3 className="text-md font-semibold mb-1 mt-4 flex items-center gap-2"><FileText className="h-5 w-5"/>Document Management</h3>
               <p className="text-sm text-muted-foreground">Securely upload and share documents related to your child's development.</p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2"
-                onClick={() => {
-                  console.log(`Upload Document button clicked. It is currently ${uploadDocumentButtonDisabled ? 'disabled' : 'enabled'}. Selected child: ${selectedChild ? selectedChild.name : 'None'}`);
-                  alert("Upload Document - Coming Soon!");
-                }}
-                disabled={uploadDocumentButtonDisabled}>
-                <UploadCloud className="mr-2 h-4 w-4" /> Upload Document
-              </Button>
+              {selectedChild && <UploadDocumentDialog />}
+              {!selectedChild && 
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    disabled={uploadDocumentButtonDisabled}>
+                    <UploadCloud className="mr-2 h-4 w-4" /> Upload Document
+                </Button>
+              }
               {selectedChild ? (
                 <DocumentList />
               ) : (
@@ -160,5 +172,3 @@ export default function DashboardPage() {
     </AppStateProvider>
   );
 }
-
-    
