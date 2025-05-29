@@ -1,21 +1,21 @@
 
 'use client';
 import { AppStateProvider, useAppState } from '@/contexts/app-state-context';
-import { useAuth } from '@/contexts/auth-context'; 
+import { useAuth } from '@/contexts/auth-context';
 import { ChildSelector } from '@/components/dashboard/child-selector';
 import { RecentLogsList } from '@/components/dashboard/recent-logs-list';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { PlusSquare, UserPlus, UploadCloud, Star, Info, FileText } from 'lucide-react'; // Added FileText
+import { PlusSquare, UserPlus, UploadCloud, Star, Info, FileText } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { DocumentList } from '@/components/dashboard/document-list'; // Import DocumentList
+import { DocumentList } from '@/components/dashboard/document-list';
 
-const AddChildDialog = dynamic(() => 
-  import('@/components/dashboard/add-child-dialog').then(mod => mod.AddChildDialog), 
-  { 
+const AddChildDialog = dynamic(() =>
+  import('@/components/dashboard/add-child-dialog').then(mod => mod.AddChildDialog),
+  {
     ssr: false,
     loading: () => <Skeleton className="h-10 w-[130px] rounded-md" />
   }
@@ -23,7 +23,7 @@ const AddChildDialog = dynamic(() =>
 
 function DashboardContent() {
   const { selectedChild, childrenLoading } = useAppState();
-  const { firestoreUser, loading: authLoading } = useAuth(); 
+  const { firestoreUser, loading: authLoading } = useAuth();
 
   const isProMember = firestoreUser?.membership === 'pro';
   const professionalsCount = firestoreUser?.professionalIds?.length || 0;
@@ -38,6 +38,9 @@ function DashboardContent() {
       </div>
     );
   }
+
+  const addProfessionalButtonDisabled = !canAddMoreProfessionals && !isProMember;
+  const uploadDocumentButtonDisabled = !selectedChild;
 
   return (
     <div className="space-y-8">
@@ -64,7 +67,10 @@ function DashboardContent() {
             </Button>
            )}
            {!isProMember && firestoreUser && (
-             <Button variant="outline" onClick={() => alert("Upgrade to Pro - Coming Soon!")}>
+             <Button variant="outline" onClick={() => {
+                console.log('Upgrade to Pro button clicked');
+                alert("Upgrade to Pro - Coming Soon!");
+                }}>
                <Star className="mr-2 h-4 w-4" /> Upgrade to Pro
              </Button>
            )}
@@ -95,7 +101,10 @@ function DashboardContent() {
                 <Alert variant="default" className="mb-2 bg-accent/30 border-accent">
                   <Info className="h-4 w-4 text-accent-foreground" />
                   <AlertDescription className="text-accent-foreground">
-                    You can link 1 professional on the Free plan. <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => alert("Upgrade to Pro - Coming Soon!")}>Upgrade to Pro</Button> for unlimited.
+                    You can link 1 professional on the Free plan. <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => {
+                        console.log('Upgrade to Pro link clicked from Alert');
+                        alert("Upgrade to Pro - Coming Soon!");
+                    }}>Upgrade to Pro</Button> for unlimited.
                   </AlertDescription>
                 </Alert>
               )}
@@ -103,14 +112,30 @@ function DashboardContent() {
                 {professionalsCount} professional(s) linked.
                 {isProMember ? " Add more to enrich your child's profile." : ""}
               </p>
-              <Button variant="outline" size="sm" className="mt-2" onClick={() => alert("Add Professional - Coming Soon!")} disabled={!canAddMoreProfessionals && !isProMember}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => {
+                  console.log(`Add Professional button clicked. It is currently ${addProfessionalButtonDisabled ? 'disabled' : 'enabled'}. isProMember: ${isProMember}, professionalsCount: ${professionalsCount}`);
+                  alert("Add Professional - Coming Soon!");
+                }}
+                disabled={addProfessionalButtonDisabled}>
                 <UserPlus className="mr-2 h-4 w-4" /> Add Professional
               </Button>
             </div>
             <div>
               <h3 className="text-md font-semibold mb-1 mt-4 flex items-center gap-2"><FileText className="h-5 w-5"/>Document Management</h3>
               <p className="text-sm text-muted-foreground">Securely upload and share documents related to your child's development.</p>
-              <Button variant="outline" size="sm" className="mt-2" onClick={() => alert("Upload Document - Coming Soon!")} disabled={!selectedChild}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => {
+                  console.log(`Upload Document button clicked. It is currently ${uploadDocumentButtonDisabled ? 'disabled' : 'enabled'}. Selected child: ${selectedChild ? selectedChild.name : 'None'}`);
+                  alert("Upload Document - Coming Soon!");
+                }}
+                disabled={uploadDocumentButtonDisabled}>
                 <UploadCloud className="mr-2 h-4 w-4" /> Upload Document
               </Button>
               {selectedChild ? (
@@ -130,8 +155,10 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <AppStateProvider> 
+    <AppStateProvider>
         <DashboardContent />
     </AppStateProvider>
   );
 }
+
+    
