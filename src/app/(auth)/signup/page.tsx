@@ -4,10 +4,11 @@
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { getAuthSafe, getDbSafe } from '@/lib/firebase';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { AuthForm } from '@/components/auth/auth-form';
 import type { SignupInput } from '@/lib/schemas';
 import { useToast } from '@/hooks/use-toast';
+import type { UserProfile } from '@/types';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -21,13 +22,21 @@ export default function SignupPage() {
       const user = userCredential.user;
 
       // Create user document in Firestore
-      await setDoc(doc(db, 'users', user.uid), {
+      const newUserProfile: UserProfile = {
+        uid: user.uid,
         email: user.email,
-        displayName: user.displayName || null, // Store display name if available (usually not for email/pass)
-        photoURL: user.photoURL || null,     // Store photo URL if available
-        createdAt: serverTimestamp(),      // Use serverTimestamp for consistency
-        providerId: 'password', // Indicate email/password provider
-      });
+        displayName: user.displayName || user.email?.split('@')[0] || null, // Default display name
+        photoURL: user.photoURL || null,
+        role: 'parent',
+        membership: 'free',
+        childIds: [],
+        professionalIds: [],
+        storageUsed: 0,
+        storageLimit: 10, // Default 10MB for free tier
+        createdAt: serverTimestamp() as Timestamp, // Cast to Timestamp for type safety server-side
+        providerId: 'password',
+      };
+      await setDoc(doc(db, 'users', user.uid), newUserProfile);
 
       toast({ title: 'Signup Successful', description: 'Welcome to Little Steps!'});
       router.push('/dashboard');
@@ -42,11 +51,9 @@ export default function SignupPage() {
         errorMessage = 'This domain is not authorized for authentication. Please contact support or try again later.';
       }
       toast({ variant: 'destructive', title: 'Signup Failed', description: errorMessage });
-      throw new Error(errorMessage); // re-throw to be caught by AuthForm
+      throw new Error(errorMessage); 
     }
   };
 
-  // For now, OAuth is only on the login page. 
-  // If you want to add it to signup, pass the handlers like in login page.
   return <AuthForm isLogin={false} onSubmit={handleSignup} />;
 }

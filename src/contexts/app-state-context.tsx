@@ -3,16 +3,17 @@
 
 import type { ReactNode} from 'react';
 import { createContext, useContext, useState, useEffect } from 'react';
-import type { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
+import type { DocumentData, QueryDocumentSnapshot, Timestamp } from 'firebase/firestore';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { getDbSafe } from '@/lib/firebase';
 import { useAuth } from './auth-context';
+// Using Firestore specific type for ChildProfile as stored in DB
+import type { ChildProfileFirestore } from '@/types';
 
-export interface ChildProfile {
-  id: string;
-  name: string;
-  // age?: number; // Add if needed
-  parentId: string;
+
+// This is the type for ChildProfile as used in the app's state
+export interface ChildProfile extends ChildProfileFirestore {
+  id: string; 
 }
 
 interface AppStateContextType {
@@ -25,12 +26,11 @@ interface AppStateContextType {
 const AppStateContext = createContext<AppStateContextType | undefined>(undefined);
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user } = useAuth(); // Firebase Auth user
   const [selectedChildId, setSelectedChildIdState] = useState<string | null>(null);
   const [childrenProfiles, setChildrenProfiles] = useState<ChildProfile[]>([]);
   const [childrenLoading, setChildrenLoading] = useState(true);
 
-  // Load children profiles for the current user
   useEffect(() => {
     if (user) {
       setChildrenLoading(true);
@@ -38,14 +38,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         const db = getDbSafe();
         const q = query(collection(db, 'children'), where('parentId', '==', user.uid), orderBy('name'));
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
-          const profiles = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChildProfile));
+          const profiles = querySnapshot.docs.map(doc => ({ 
+            id: doc.id, 
+            ...doc.data() 
+          } as ChildProfile));
           setChildrenProfiles(profiles);
           
-          // If no child is selected, or selected child is no longer available, select the first one
           if (profiles.length > 0 && (!selectedChildId || !profiles.find(p => p.id === selectedChildId))) {
             setSelectedChildIdState(profiles[0].id);
           } else if (profiles.length === 0) {
-            setSelectedChildIdState(null); // No children, no selection
+            setSelectedChildIdState(null);
           }
           setChildrenLoading(false);
         }, (error) => {
@@ -58,15 +60,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setChildrenProfiles([]);
         setSelectedChildIdState(null);
         setChildrenLoading(false);
-        return () => {}; // No-op unsubscribe
+        return () => {};
       }
     } else {
-      // No user, clear children profiles and selection
       setChildrenProfiles([]);
       setSelectedChildIdState(null);
       setChildrenLoading(false);
     }
-  }, [user, selectedChildId]); // re-run if user changes, or selectedChildId needs re-validation
+  }, [user, selectedChildId]);
 
   const selectedChild = childrenProfiles.find(child => child.id === selectedChildId) || null;
 
