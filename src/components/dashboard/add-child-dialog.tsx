@@ -48,20 +48,27 @@ export function AddChildDialog() {
         ...values,
         parentId: user.uid,
         createdAt: serverTimestamp(),
+        professionalIds: [], // Initialize professionalIds as an empty array
       });
       toast({ title: 'Child Added', description: `${values.name} has been added to your profiles.` });
       form.reset();
+      setIsSubmitting(false); // Reset submitting state before closing
       setOpen(false);
     } catch (error) {
       console.error('Error adding child:', error);
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to add child. Please try again.' });
-    } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false); // Ensure submitting state is reset on error
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      setOpen(isOpen);
+      if (!isOpen) { // If dialog is closing, reset form and submitting state
+        form.reset();
+        setIsSubmitting(false);
+      }
+    }}>
       <DialogTrigger asChild>
         <Button variant="outline">
           <PlusCircle className="mr-2 h-4 w-4" /> Add Child
@@ -87,7 +94,6 @@ export function AddChildDialog() {
                 </FormItem>
               )}
             />
-            {/* Add age field if needed in future, according to schema update */}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
                 Cancel
