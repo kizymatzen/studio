@@ -10,7 +10,7 @@ import {
   type UserCredential,
   type AuthError 
 } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
+import { getAuthSafe, getDbSafe } from '@/lib/firebase';
 import { AuthForm } from '@/components/auth/auth-form';
 import type { LoginInput } from '@/lib/schemas';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +22,7 @@ export default function LoginPage() {
 
   const handleSuccessfulLogin = async (userCredential: UserCredential, providerName: string) => {
     const user = userCredential.user;
+    const db = getDbSafe();
     const userDocRef = doc(db, 'users', user.uid);
     
     try {
@@ -66,6 +67,7 @@ export default function LoginPage() {
 
   const handleLogin = async (values: LoginInput) => {
     try {
+      const auth = getAuthSafe();
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       // Standard email login doesn't typically create the user doc here, it's done at signup.
       // If you want to ensure doc exists for older users or handle it here too, add similar logic as in handleSuccessfulLogin.
@@ -85,6 +87,7 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     const provider = new GoogleAuthProvider();
     try {
+      const auth = getAuthSafe();
       const userCredential = await signInWithPopup(auth, provider);
       await handleSuccessfulLogin(userCredential, 'Google');
     } catch (error: any) {
@@ -100,6 +103,7 @@ export default function LoginPage() {
     //   prompt: 'select_account',
     // });
     try {
+      const auth = getAuthSafe();
       const userCredential = await signInWithPopup(auth, provider);
       await handleSuccessfulLogin(userCredential, 'Microsoft');
     } catch (error: any) {
@@ -117,4 +121,3 @@ export default function LoginPage() {
     />
   );
 }
-

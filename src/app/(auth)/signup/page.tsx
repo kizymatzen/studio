@@ -3,7 +3,7 @@
 
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
+import { getAuthSafe, getDbSafe } from '@/lib/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { AuthForm } from '@/components/auth/auth-form';
 import type { SignupInput } from '@/lib/schemas';
@@ -15,6 +15,8 @@ export default function SignupPage() {
 
   const handleSignup = async (values: SignupInput) => {
     try {
+      const auth = getAuthSafe();
+      const db = getDbSafe();
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
@@ -34,6 +36,10 @@ export default function SignupPage() {
       let errorMessage = 'Signup failed. Please try again.';
       if (error.code === 'auth/email-already-in-use') {
         errorMessage = 'This email is already registered. Please login or use a different email.';
+      } else if (error.code === 'auth/requests-to-this-api-identitytoolkit-method-google.cloud.identitytoolkit.v1.authenticationservice.signup-are-blocked') {
+        errorMessage = 'Signup is currently disabled for this project. Please contact support.';
+      } else if (error.code === 'auth/unauthorized-domain'){
+        errorMessage = 'This domain is not authorized for authentication. Please contact support or try again later.';
       }
       toast({ variant: 'destructive', title: 'Signup Failed', description: errorMessage });
       throw new Error(errorMessage); // re-throw to be caught by AuthForm
@@ -44,4 +50,3 @@ export default function SignupPage() {
   // If you want to add it to signup, pass the handlers like in login page.
   return <AuthForm isLogin={false} onSubmit={handleSignup} />;
 }
-

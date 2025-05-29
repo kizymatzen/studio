@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAppState } from '@/contexts/app-state-context';
-import { db } from '@/lib/firebase';
+import { getDbSafe } from '@/lib/firebase';
 import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import type { BehaviorLog } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,24 +44,32 @@ export function RecentLogsList() {
 
     setIsLoading(true);
     setError(null);
-    const q = query(
-      collection(db, 'behaviorLogs'),
-      where('childId', '==', selectedChild.id),
-      orderBy('date', 'desc'),
-      limit(10)
-    );
+    try {
+      const db = getDbSafe();
+      const q = query(
+        collection(db, 'behaviorLogs'),
+        where('childId', '==', selectedChild.id),
+        orderBy('date', 'desc'),
+        limit(10)
+      );
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const fetchedLogs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BehaviorLog));
-      setLogs(fetchedLogs);
-      setIsLoading(false);
-    }, (err) => {
-      console.error("Error fetching recent logs:", err);
-      setError("Failed to load recent logs.");
-      setIsLoading(false);
-    });
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const fetchedLogs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BehaviorLog));
+        setLogs(fetchedLogs);
+        setIsLoading(false);
+      }, (err) => {
+        console.error("Error fetching recent logs:", err);
+        setError("Failed to load recent logs.");
+        setIsLoading(false);
+      });
 
-    return () => unsubscribe();
+      return () => unsubscribe();
+    } catch (e: any) {
+      console.error("Error initializing Firestore listener:", e);
+      setError("Failed to initialize connection for recent logs.");
+      setIsLoading(false);
+      return () => {}; // No-op unsubscribe
+    }
   }, [selectedChild]);
 
   if (isLoading) {

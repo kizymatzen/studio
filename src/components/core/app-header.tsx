@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -5,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/core/logo';
-import { auth } from '@/lib/firebase';
+import { getAuthSafe } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { LogOut, UserCircle, Home } from 'lucide-react';
 
@@ -15,6 +16,7 @@ export function AppHeader() {
 
   const handleLogout = async () => {
     try {
+      const auth = getAuthSafe();
       await signOut(auth);
       router.push('/login');
     } catch (error) {

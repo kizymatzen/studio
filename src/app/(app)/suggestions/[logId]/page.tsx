@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getDbSafe } from '@/lib/firebase';
 import type { BehaviorLog } from '@/types';
 import { selectStory, type SelectStoryOutput } from '@/ai/flows/select-story';
 import { selectActivity, type SelectActivityOutput } from '@/ai/flows/select-activity';
@@ -51,6 +52,7 @@ function SuggestionsContent() {
     const fetchLog = async () => {
       setLoadingLog(true);
       try {
+        const db = getDbSafe();
         const logDoc = await getDoc(doc(db, 'behaviorLogs', logId));
         if (logDoc.exists()) {
           setBehaviorLog({ id: logDoc.id, ...logDoc.data() } as BehaviorLog);

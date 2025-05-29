@@ -17,9 +17,9 @@ const firebaseConfig = {
 };
 
 let app: FirebaseApp | undefined = undefined;
-let auth: Auth;
-let db: Firestore;
-let storage: FirebaseStorage;
+let authInstance: Auth | undefined = undefined;
+let dbInstance: Firestore | undefined = undefined;
+let storageInstance: FirebaseStorage | undefined = undefined;
 
 const isPlaceholderKey = (key: string | undefined): boolean =>
   !key || key.includes("YOUR_") || key === "YOUR_API_KEY";
@@ -36,20 +36,18 @@ if (!getApps().length) {
       "Current API Key read: " + firebaseConfig.apiKey + "\n" +
       "****************************************************************************************"
     );
-    // app remains undefined, preventing Firebase from trying to initialize with a bad key
+    // app remains undefined
   } else {
-    // API key seems to be present and not a placeholder, attempt initialization
     try {
       app = initializeApp(firebaseConfig);
-      console.log("Firebase app initialized successfully."); // Log success
+      console.log("Firebase app initialized successfully.");
     } catch (error) {
       console.error("Firebase initialization failed even though API key seemed valid. Error:", error);
-      // app might be partially initialized or undefined, depending on the error
+      // app might be partially initialized or undefined
     }
   }
 } else {
   app = getApps()[0];
-  // Check if the already initialized app is using a placeholder key
   if (isPlaceholderKey(app.options.apiKey as string | undefined)) {
      console.error(
       "****************************************************************************************\n" +
@@ -67,25 +65,43 @@ if (!getApps().length) {
 
 // Initialize Firebase services only if the app was successfully initialized with a valid key
 if (app && !isPlaceholderKey(app.options.apiKey as string | undefined)) {
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
+  authInstance = getAuth(app);
+  dbInstance = getFirestore(app);
+  storageInstance = getStorage(app);
 } else {
-  // Only log this warning if the initial error wasn't due to a placeholder API key
-  // (which would have already been logged with more detail)
-  if (!isPlaceholderKey(firebaseConfig.apiKey)) {
+  if (!isPlaceholderKey(firebaseConfig.apiKey)) { // Only warn if the main error wasn't the placeholder key itself
     console.warn(
       "Firebase app is not initialized or uses an invalid API key. Firebase services (Auth, Firestore, Storage) will not be available. " +
       "This might be due to an issue during initialization or an incorrect API key in .env."
     );
   }
-  // Assign null to satisfy type strictness, other parts of the app should handle this.
-  // @ts-ignore
-  auth = null;
-  // @ts-ignore
-  db = null;
-  // @ts-ignore
-  storage = null;
 }
 
-export { app, auth, db, storage };
+export { app };
+
+export function getAuthSafe(): Auth {
+  if (!authInstance) {
+    throw new Error(
+      "Firebase Auth is not initialized. Check Firebase configuration, API key, and ensure the Identity Toolkit API is enabled in your Firebase project."
+    );
+  }
+  return authInstance;
+}
+
+export function getDbSafe(): Firestore {
+  if (!dbInstance) {
+    throw new Error(
+      "Firebase Firestore is not initialized. Check Firebase configuration, API key, and ensure Firestore (Native mode or Datastore mode) is set up in your Firebase project."
+    );
+  }
+  return dbInstance;
+}
+
+export function getStorageSafe(): FirebaseStorage {
+  if (!storageInstance) {
+    throw new Error(
+      "Firebase Storage is not initialized. Check Firebase configuration and API key."
+    );
+  }
+  return storageInstance;
+}

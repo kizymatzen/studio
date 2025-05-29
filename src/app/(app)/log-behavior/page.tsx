@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation';
 import { BehaviorLogForm } from '@/components/forms/behavior-log-form';
 import { AppStateProvider, useAppState } from '@/contexts/app-state-context';
 import { useAuth } from '@/contexts/auth-context';
-import { db } from '@/lib/firebase';
+import { getDbSafe } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import type { BehaviorLogInput } from '@/lib/schemas';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button'; // Added Button import
+import { Button } from '@/components/ui/button';
 
 function LogBehaviorContent() {
   const router = useRouter();
@@ -27,6 +27,7 @@ function LogBehaviorContent() {
     }
 
     try {
+      const db = getDbSafe();
       const docRef = await addDoc(collection(db, 'behaviorLogs'), {
         ...values,
         date: Timestamp.fromDate(values.date), // Convert JS Date to Firestore Timestamp

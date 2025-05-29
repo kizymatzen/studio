@@ -1,10 +1,11 @@
+
 'use client';
 
 import type { ReactNode} from 'react';
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getDbSafe } from '@/lib/firebase';
 import { useAuth } from './auth-context';
 
 export interface ChildProfile {
@@ -33,23 +34,32 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (user) {
       setChildrenLoading(true);
-      const q = query(collection(db, 'children'), where('parentId', '==', user.uid), orderBy('name'));
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const profiles = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChildProfile));
-        setChildrenProfiles(profiles);
-        
-        // If no child is selected, or selected child is no longer available, select the first one
-        if (profiles.length > 0 && (!selectedChildId || !profiles.find(p => p.id === selectedChildId))) {
-          setSelectedChildIdState(profiles[0].id);
-        } else if (profiles.length === 0) {
-          setSelectedChildIdState(null); // No children, no selection
-        }
+      try {
+        const db = getDbSafe();
+        const q = query(collection(db, 'children'), where('parentId', '==', user.uid), orderBy('name'));
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+          const profiles = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChildProfile));
+          setChildrenProfiles(profiles);
+          
+          // If no child is selected, or selected child is no longer available, select the first one
+          if (profiles.length > 0 && (!selectedChildId || !profiles.find(p => p.id === selectedChildId))) {
+            setSelectedChildIdState(profiles[0].id);
+          } else if (profiles.length === 0) {
+            setSelectedChildIdState(null); // No children, no selection
+          }
+          setChildrenLoading(false);
+        }, (error) => {
+          console.error("Error fetching children profiles:", error);
+          setChildrenLoading(false);
+        });
+        return () => unsubscribe();
+      } catch (e) {
+        console.error("AppStateProvider: Failed to get Firestore instance.", e);
+        setChildrenProfiles([]);
+        setSelectedChildIdState(null);
         setChildrenLoading(false);
-      }, (error) => {
-        console.error("Error fetching children profiles:", error);
-        setChildrenLoading(false);
-      });
-      return () => unsubscribe();
+        return () => {}; // No-op unsubscribe
+      }
     } else {
       // No user, clear children profiles and selection
       setChildrenProfiles([]);
