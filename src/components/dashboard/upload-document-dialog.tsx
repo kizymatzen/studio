@@ -40,12 +40,23 @@ export function UploadDocumentDialog() {
   };
 
   const handleSubmit = async () => {
+    console.log('Upload handleSubmit triggered.');
+    console.log('selectedFile:', selectedFile);
+    console.log('user:', user);
+    console.log('selectedChild:', selectedChild);
+    console.log('firestoreUser:', firestoreUser);
+
     if (!selectedFile || !user || !selectedChild || !firestoreUser) {
       toast({
         variant: 'destructive',
         title: 'Upload Error',
         description: 'Missing file, user, or child selection. Please try again.',
       });
+      // Log which specific item is missing for better debugging
+      if (!selectedFile) console.error('Upload Debug: selectedFile is missing.');
+      if (!user) console.error('Upload Debug: user (auth) is missing.');
+      if (!selectedChild) console.error('Upload Debug: selectedChild is missing.');
+      if (!firestoreUser) console.error('Upload Debug: firestoreUser is missing.');
       return;
     }
 
@@ -131,14 +142,14 @@ export function UploadDocumentDialog() {
         </DialogHeader>
         
         {/* Input Group - direct child of DialogContent grid */}
-        <div className="grid w-full max-w-sm items-center gap-1.5">
+        <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
           <Label htmlFor="document-file">Document File</Label>
           <Input id="document-file" type="file" onChange={handleFileChange} disabled={isUploading} />
         </div>
 
         {/* Selected File Info - direct child of DialogContent grid */}
         {selectedFile && (
-          <div className="p-2 border rounded-md bg-muted text-sm flex items-center gap-2">
+          <div className="p-2 border rounded-md bg-muted text-sm flex items-center gap-2 mb-4">
             <FileIcon className="h-4 w-4 shrink-0" />
             <span className="truncate flex-grow">{selectedFile.name}</span>
             <span className="text-muted-foreground text-xs whitespace-nowrap">
@@ -151,7 +162,7 @@ export function UploadDocumentDialog() {
           <Button variant="outline" onClick={() => setOpen(false)} disabled={isUploading}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!selectedFile || isUploading}>
+          <Button onClick={handleSubmit} disabled={!selectedFile || isUploading || !user || !firestoreUser || !selectedChild}>
             {isUploading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
