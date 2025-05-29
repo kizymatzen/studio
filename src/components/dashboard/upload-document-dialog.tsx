@@ -49,9 +49,8 @@ export function UploadDocumentDialog() {
       return;
     }
 
-    // Phase 2: Storage Limit Check (Simplified for now, full logic would be more robust)
     const currentStorageUsedMB = firestoreUser.storageUsed || 0;
-    const storageLimitMB = firestoreUser.storageLimit || 10; // Default 10MB for free
+    const storageLimitMB = firestoreUser.storageLimit || 10; 
     const newFileSizeMB = selectedFile.size / (1024 * 1024);
 
     if (currentStorageUsedMB + newFileSizeMB > storageLimitMB) {
@@ -63,45 +62,39 @@ export function UploadDocumentDialog() {
         return;
     }
 
-
     setIsUploading(true);
     try {
       const storage = getStorageSafe();
       const db = getDbSafe();
 
-      // Sanitize filename or use a unique ID for storagePath if needed in production
       const storagePath = `documents/${user.uid}/${selectedChild.id}/${selectedFile.name}`;
       const storageRef = ref(storage, storagePath);
 
-      // Upload file to Firebase Storage
       const uploadResult = await uploadBytes(storageRef, selectedFile);
       console.log('File uploaded successfully:', uploadResult);
 
-      // Add document metadata to Firestore
       await addDoc(collection(db, 'documents'), {
         childId: selectedChild.id,
         ownerId: user.uid,
         docName: selectedFile.name,
-        storagePath: uploadResult.metadata.fullPath, // Use fullPath from result
+        storagePath: uploadResult.metadata.fullPath, 
         fileType: selectedFile.type,
-        fileSize: selectedFile.size, // in bytes
+        fileSize: selectedFile.size, 
         uploadedAt: serverTimestamp(),
       });
       
-      // Update user's storageUsed
       const userDocRef = doc(db, 'users', user.uid);
       await updateDoc(userDocRef, {
           storageUsed: increment(newFileSizeMB)
       });
-
 
       toast({
         title: 'Upload Successful',
         description: `${selectedFile.name} has been uploaded.`,
       });
 
-      setSelectedFile(null); // Reset file input
-      setOpen(false); // Close dialog
+      setSelectedFile(null); 
+      setOpen(false); 
     } catch (error: any) {
       console.error('Error uploading document:', error);
       toast({
@@ -117,8 +110,8 @@ export function UploadDocumentDialog() {
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
     if (!isOpen) {
-      setSelectedFile(null); // Reset file when dialog closes
-      setIsUploading(false); // Reset uploading state
+      setSelectedFile(null); 
+      setIsUploading(false); 
     }
   };
 
@@ -136,21 +129,24 @@ export function UploadDocumentDialog() {
             Select a file to upload. It will be associated with {selectedChild?.name}.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Label htmlFor="document-file">Document File</Label>
-            <Input id="document-file" type="file" onChange={handleFileChange} disabled={isUploading} />
-          </div>
-          {selectedFile && (
-            <div className="mt-2 p-2 border rounded-md bg-muted text-sm flex items-center gap-2">
-              <FileIcon className="h-4 w-4 shrink-0" />
-              <span className="truncate flex-grow">{selectedFile.name}</span>
-              <span className="text-muted-foreground text-xs whitespace-nowrap">
-                ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
-              </span>
-            </div>
-          )}
+        
+        {/* Input Group - direct child of DialogContent grid */}
+        <div className="grid w-full max-w-sm items-center gap-1.5">
+          <Label htmlFor="document-file">Document File</Label>
+          <Input id="document-file" type="file" onChange={handleFileChange} disabled={isUploading} />
         </div>
+
+        {/* Selected File Info - direct child of DialogContent grid */}
+        {selectedFile && (
+          <div className="p-2 border rounded-md bg-muted text-sm flex items-center gap-2">
+            <FileIcon className="h-4 w-4 shrink-0" />
+            <span className="truncate flex-grow">{selectedFile.name}</span>
+            <span className="text-muted-foreground text-xs whitespace-nowrap">
+              ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
+            </span>
+          </div>
+        )}
+      
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)} disabled={isUploading}>
             Cancel
