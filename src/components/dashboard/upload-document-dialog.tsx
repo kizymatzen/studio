@@ -4,31 +4,32 @@
 import { useState, type ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+} from '@/components/ui/dialog'; // Import only DialogContent and related parts
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/auth-context';
-import { useAppState } from '@/contexts/app-state-context';
+import type { ChildProfile } from '@/contexts/app-state-context';
 import { getStorageSafe, getDbSafe } from '@/lib/firebase';
 import { ref, uploadBytes } from 'firebase/storage';
 import { collection, addDoc, serverTimestamp, updateDoc, doc, increment } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { UploadCloud, File as FileIcon, Loader2 } from 'lucide-react';
+import { File as FileIcon, Loader2 } from 'lucide-react';
 
-export function UploadDocumentDialog() {
-  const [open, setOpen] = useState(false);
+interface UploadDocumentDialogContentProps {
+  child: ChildProfile | null; // Receive child as a prop
+  onOpenChange: (open: boolean) => void; // To close the dialog programmatically
+}
+
+export function UploadDocumentDialogContent({ child, onOpenChange }: UploadDocumentDialogContentProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   
-  const { user, firestoreUser } = useAuth(); // Auth user and Firestore user profile
-  const { selectedChild } = useAppState();
+  const { user, firestoreUser } = useAuth();
   const { toast } = useToast();
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -43,19 +44,18 @@ export function UploadDocumentDialog() {
     console.log('Upload handleSubmit triggered.');
     console.log('selectedFile:', selectedFile);
     console.log('user:', user);
-    console.log('selectedChild:', selectedChild);
+    console.log('child (prop):', child);
     console.log('firestoreUser:', firestoreUser);
 
-    if (!selectedFile || !user || !selectedChild || !firestoreUser) {
+    if (!selectedFile || !user || !child || !firestoreUser) {
       toast({
         variant: 'destructive',
         title: 'Upload Error',
         description: 'Missing file, user, or child selection. Please try again.',
       });
-      // Log which specific item is missing for better debugging
       if (!selectedFile) console.error('Upload Debug: selectedFile is missing.');
       if (!user) console.error('Upload Debug: user (auth) is missing.');
-      if (!selectedChild) console.error('Upload Debug: selectedChild is missing.');
+      if (!child) console.error('Upload Debug: child (prop) is missing.');
       if (!firestoreUser) console.error('Upload Debug: firestoreUser is missing.');
       return;
     }
@@ -78,14 +78,14 @@ export function UploadDocumentDialog() {
       const storage = getStorageSafe();
       const db = getDbSafe();
 
-      const storagePath = `documents/${user.uid}/${selectedChild.id}/${selectedFile.name}`;
+      const storagePath = `documents/${user.uid}/${child.id}/${selectedFile.name}`;
       const storageRef = ref(storage, storagePath);
 
       const uploadResult = await uploadBytes(storageRef, selectedFile);
       console.log('File uploaded successfully:', uploadResult);
 
       await addDoc(collection(db, 'documents'), {
-        childId: selectedChild.id,
+        childId: child.id,
         ownerId: user.uid,
         docName: selectedFile.name,
         storagePath: uploadResult.metadata.fullPath, 
@@ -105,7 +105,7 @@ export function UploadDocumentDialog() {
       });
 
       setSelectedFile(null); 
-      setOpen(false); 
+      onOpenChange(false); // Close dialog on success
     } catch (error: any) {
       console.error('Error uploading document:', error);
       toast({
@@ -118,62 +118,67 @@ export function UploadDocumentDialog() {
     }
   };
   
-  const handleOpenChange = (isOpen: boolean) => {
-    setOpen(isOpen);
-    if (!isOpen) {
-      setSelectedFile(null); 
-      setIsUploading(false); 
-    }
-  };
+  // Reset state if the dialog is closed externally (e.g. isOpen prop changes)
+  // This is mainly handled by DashboardPage's onOpenChange now.
 
-  return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="mt-2" disabled={!selectedChild || isUploading}>
-          <UploadCloud className="mr-2 h-4 w-4" /> Upload Document
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+  if (!child) {
+    // This case should ideally not be hit if DialogContent is only rendered when child exists,
+    // but good for robustness.
+    return (
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>Upload Document for {selectedChild?.name}</DialogTitle>
-          <DialogDescription>
-            Select a file to upload. It will be associated with {selectedChild?.name}.
-          </DialogDescription>
+          <DialogTitle>Error</DialogTitle>
+          <DialogDescription>Child information is not available. Please select a child first.</DialogDescription>
         </DialogHeader>
-        
-        {/* Input Group - direct child of DialogContent grid */}
-        <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
-          <Label htmlFor="document-file">Document File</Label>
-          <Input id="document-file" type="file" onChange={handleFileChange} disabled={isUploading} />
-        </div>
-
-        {/* Selected File Info - direct child of DialogContent grid */}
-        {selectedFile && (
-          <div className="p-2 border rounded-md bg-muted text-sm flex items-center gap-2 mb-4">
-            <FileIcon className="h-4 w-4 shrink-0" />
-            <span className="truncate flex-grow">{selectedFile.name}</span>
-            <span className="text-muted-foreground text-xs whitespace-nowrap">
-              ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
-            </span>
-          </div>
-        )}
-      
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={isUploading}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={!selectedFile || isUploading || !user || !firestoreUser || !selectedChild}>
-            {isUploading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Uploading...
-              </>
-            ) : (
-              'Upload'
-            )}
-          </Button>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog>
+    );
+  }
+
+  return (
+    <DialogContent className="sm:max-w-[425px]">
+      <DialogHeader>
+        <DialogTitle>Upload Document for {child?.name}</DialogTitle>
+        <DialogDescription>
+          Select a file to upload. It will be associated with {child?.name}.
+        </DialogDescription>
+      </DialogHeader>
+      
+      <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
+        <Label htmlFor="document-file">Document File</Label>
+        <Input id="document-file" type="file" onChange={handleFileChange} disabled={isUploading} />
+      </div>
+
+      {selectedFile && (
+        <div className="p-2 border rounded-md bg-muted text-sm flex items-center gap-2 mb-4">
+          <FileIcon className="h-4 w-4 shrink-0" />
+          <span className="truncate flex-grow">{selectedFile.name}</span>
+          <span className="text-muted-foreground text-xs whitespace-nowrap">
+            ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
+          </span>
+        </div>
+      )}
+    
+      <DialogFooter>
+        <Button variant="outline" onClick={() => {
+          setSelectedFile(null); // Clear selected file on cancel
+          onOpenChange(false);
+        }} disabled={isUploading}>
+          Cancel
+        </Button>
+        <Button onClick={handleSubmit} disabled={!selectedFile || isUploading || !user || !firestoreUser || !child}>
+          {isUploading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Uploading...
+            </>
+          ) : (
+            'Upload'
+          )}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
   );
 }

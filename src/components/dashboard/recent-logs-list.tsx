@@ -36,24 +36,29 @@ export function RecentLogsList() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!selectedChild) {
+    const childId = selectedChild?.id; // Use childId for dependency
+
+    if (!childId) {
       setLogs([]);
       setIsLoading(false);
+      setError(null); // Clear error when no child is selected
       return;
     }
 
     setIsLoading(true);
     setError(null);
+    let unsubscribe = () => {}; // Initialize to no-op
+
     try {
       const db = getDbSafe();
       const q = query(
-        collection(db, 'behaviors'), // Renamed collection
-        where('childId', '==', selectedChild.id),
+        collection(db, 'behaviors'), 
+        where('childId', '==', childId), // Use childId in query
         orderBy('date', 'desc'),
         limit(10)
       );
 
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      unsubscribe = onSnapshot(q, (querySnapshot) => {
         const fetchedLogs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BehaviorLog));
         setLogs(fetchedLogs);
         setIsLoading(false);
@@ -63,16 +68,15 @@ export function RecentLogsList() {
         setIsLoading(false);
       });
 
-      return () => unsubscribe();
     } catch (e: any) {
       console.error("Error initializing Firestore listener:", e);
       setError("Failed to initialize connection for recent logs.");
       setIsLoading(false);
-      return () => {}; // No-op unsubscribe
     }
-  }, [selectedChild]);
+    return () => unsubscribe();
+  }, [selectedChild?.id]); // Depend on selectedChild.id
 
-  if (isLoading) {
+  if (isLoading && selectedChild) { // Only show skeleton if a child is selected and we are loading
     return (
       <Card>
         <CardHeader>
@@ -150,7 +154,7 @@ export function RecentLogsList() {
                     </div>
                     <span className="text-sm text-muted-foreground flex items-center gap-1">
                       <CalendarDays className="h-4 w-4" />
-                      {format(log.date.toDate(), 'MMM d, yyyy')}
+                      {log.date ? format(log.date.toDate(), 'MMM d, yyyy') : 'Date unknown'}
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground truncate mb-1">

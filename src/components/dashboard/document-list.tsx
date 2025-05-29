@@ -20,7 +20,9 @@ export function DocumentList() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!selectedChild) {
+    const childId = selectedChild?.id; // Use childId for dependency
+
+    if (!childId) {
       setDocuments([]);
       setIsLoading(false);
       setError(null);
@@ -29,16 +31,17 @@ export function DocumentList() {
 
     setIsLoading(true);
     setError(null);
+    let unsubscribe = () => {}; // Initialize unsubscribe to a no-op
+
     try {
       const db = getDbSafe();
-      // Assuming documents are stored in a 'documents' collection
       const q = query(
         collection(db, 'documents'),
-        where('childId', '==', selectedChild.id),
+        where('childId', '==', childId), // Use childId in query
         orderBy('uploadedAt', 'desc')
       );
 
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      unsubscribe = onSnapshot(q, (querySnapshot) => {
         const fetchedDocs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DocumentMetadata));
         setDocuments(fetchedDocs);
         setIsLoading(false);
@@ -48,17 +51,15 @@ export function DocumentList() {
         setIsLoading(false);
       });
 
-      return () => unsubscribe();
     } catch (e: any) {
       console.error("Error initializing Firestore listener for documents:", e);
       setError("Failed to initialize connection for documents.");
       setIsLoading(false);
-      return () => {}; 
     }
-  }, [selectedChild]);
+    return () => unsubscribe();
+  }, [selectedChild?.id]); // Depend on selectedChild.id
 
   if (!selectedChild) {
-    // This case might not be hit often if the parent card handles no selected child
     return (
         <p className="text-sm text-muted-foreground mt-2">Select a child to view their documents.</p>
     );
@@ -102,7 +103,7 @@ export function DocumentList() {
               <div>
                 <p className="font-medium text-sm">{doc.docName}</p>
                 <p className="text-xs text-muted-foreground">
-                  Uploaded on {format(doc.uploadedAt.toDate(), 'MMM d, yyyy')}
+                  Uploaded on {doc.uploadedAt ? format(doc.uploadedAt.toDate(), 'MMM d, yyyy') : 'Date unknown'}
                 </p>
               </div>
             </div>

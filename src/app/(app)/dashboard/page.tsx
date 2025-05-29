@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { DocumentList } from '@/components/dashboard/document-list';
 import { useState } from 'react';
+import { Dialog, DialogTrigger } from '@/components/ui/dialog'; // Import Dialog and DialogTrigger
 
 const AddChildDialog = dynamic(() =>
   import('@/components/dashboard/add-child-dialog').then(mod => mod.AddChildDialog),
@@ -22,12 +23,15 @@ const AddChildDialog = dynamic(() =>
   }
 );
 
-const UploadDocumentDialog = dynamic(() =>
-  import('@/components/dashboard/upload-document-dialog').then(mod => mod.UploadDocumentDialog),
+// Dynamically import the renamed UploadDocumentDialogContent
+const UploadDocumentDialogContent = dynamic(() =>
+  import('@/components/dashboard/upload-document-dialog').then(mod => mod.UploadDocumentDialogContent),
   {
     ssr: false,
-    // You can add a specific skeleton for this if needed
-    loading: () => <Skeleton className="h-10 w-[170px] rounded-md" />
+    loading: () => (
+      // Placeholder for dialog content loading state if needed
+      <div className="p-6"><Skeleton className="h-40 w-full" /></div>
+    )
   }
 );
 
@@ -140,16 +144,39 @@ function DashboardContent() {
             <div>
               <h3 className="text-md font-semibold mb-1 mt-4 flex items-center gap-2"><FileText className="h-5 w-5"/>Document Management</h3>
               <p className="text-sm text-muted-foreground">Securely upload and share documents related to your child's development.</p>
-              {selectedChild && <UploadDocumentDialog />}
-              {!selectedChild && 
-                <Button
+              
+              <Dialog open={isUploadDocumentDialogOpen} onOpenChange={(isOpen) => {
+                setIsUploadDocumentDialogOpen(isOpen);
+                // If dialog is closing and not uploading, it's a good time to reset any internal states if needed,
+                // but UploadDocumentDialogContent handles its own internal selectedFile reset on cancel.
+              }}>
+                <DialogTrigger asChild>
+                  <Button
                     variant="outline"
                     size="sm"
                     className="mt-2"
-                    disabled={uploadDocumentButtonDisabled}>
+                    disabled={uploadDocumentButtonDisabled}
+                    onClick={() => {
+                      if (selectedChild) {
+                         console.log('Upload Document button clicked for child:', selectedChild.name);
+                         setIsUploadDocumentDialogOpen(true);
+                      } else {
+                         console.log('Upload Document button clicked, but no child selected (button should be disabled).');
+                      }
+                    }}
+                  >
                     <UploadCloud className="mr-2 h-4 w-4" /> Upload Document
-                </Button>
-              }
+                  </Button>
+                </DialogTrigger>
+                {/* Conditionally render content to ensure selectedChild is available */}
+                {selectedChild && isUploadDocumentDialogOpen && (
+                    <UploadDocumentDialogContent 
+                        child={selectedChild} 
+                        onOpenChange={setIsUploadDocumentDialogOpen} 
+                    />
+                )}
+              </Dialog>
+
               {selectedChild ? (
                 <DocumentList />
               ) : (
