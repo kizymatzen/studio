@@ -24,12 +24,12 @@ export interface UserProfile {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  role: 'parent' | 'therapist' | 'teacher' | 'admin'; // Example roles
+  role: 'parent' | 'therapist' | 'teacher' | 'admin';
   membership: 'free' | 'pro';
-  childIds?: string[]; // IDs of children managed by this parent (for parents)
-  professionalIds?: string[]; // IDs of professionals linked by this parent (for parents)
-  linkedChildren?: string[]; // IDs of children this professional is linked to (for professionals)
-  linkedBy?: string; // UID of the parent who linked this professional (for professionals)
+  childIds?: string[]; 
+  professionalIds?: string[]; 
+  linkedChildren?: string[]; 
+  linkedBy?: string; 
   storageUsed: number; // in MB
   storageLimit: number; // in MB
   createdAt: Timestamp;
@@ -37,10 +37,19 @@ export interface UserProfile {
 }
 
 export interface ChildProfileFirestore {
-  // Represents the structure in Firestore, parentId is key for linking
   name: string;
   parentId: string;
-  professionalIds?: string[];
+  professionalIds: string[]; // Initialized as empty array on creation
   createdAt: Timestamp;
-  // other fields like age, dob if you add them
+}
+
+export interface DocumentMetadata {
+  id: string;
+  childId: string;
+  ownerId: string; // UID of the parent who uploaded
+  docName: string;
+  storagePath: string; // Full path in Firebase Storage
+  fileType: string; // e.g., 'application/pdf'
+  fileSize: number; // in bytes
+  uploadedAt: Timestamp;
 }

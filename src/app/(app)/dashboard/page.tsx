@@ -1,16 +1,17 @@
 
 'use client';
 import { AppStateProvider, useAppState } from '@/contexts/app-state-context';
-import { useAuth } from '@/contexts/auth-context'; // Import useAuth to get firestoreUser
+import { useAuth } from '@/contexts/auth-context'; 
 import { ChildSelector } from '@/components/dashboard/child-selector';
 import { RecentLogsList } from '@/components/dashboard/recent-logs-list';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { PlusSquare, UserPlus, UploadCloud, Star, Info } from 'lucide-react';
+import { PlusSquare, UserPlus, UploadCloud, Star, Info, FileText } from 'lucide-react'; // Added FileText
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { DocumentList } from '@/components/dashboard/document-list'; // Import DocumentList
 
 const AddChildDialog = dynamic(() => 
   import('@/components/dashboard/add-child-dialog').then(mod => mod.AddChildDialog), 
@@ -22,7 +23,7 @@ const AddChildDialog = dynamic(() =>
 
 function DashboardContent() {
   const { selectedChild, childrenLoading } = useAppState();
-  const { firestoreUser, loading: authLoading } = useAuth(); // Get firestoreUser and its loading state
+  const { firestoreUser, loading: authLoading } = useAuth(); 
 
   const isProMember = firestoreUser?.membership === 'pro';
   const professionalsCount = firestoreUser?.professionalIds?.length || 0;
@@ -107,11 +108,16 @@ function DashboardContent() {
               </Button>
             </div>
             <div>
-              <h3 className="text-md font-semibold mb-1">Document Management</h3>
+              <h3 className="text-md font-semibold mb-1 mt-4 flex items-center gap-2"><FileText className="h-5 w-5"/>Document Management</h3>
               <p className="text-sm text-muted-foreground">Securely upload and share documents related to your child's development.</p>
-              <Button variant="outline" size="sm" className="mt-2" onClick={() => alert("Upload Document - Coming Soon!")}>
+              <Button variant="outline" size="sm" className="mt-2" onClick={() => alert("Upload Document - Coming Soon!")} disabled={!selectedChild}>
                 <UploadCloud className="mr-2 h-4 w-4" /> Upload Document
               </Button>
+              {selectedChild ? (
+                <DocumentList />
+              ) : (
+                <p className="text-sm text-muted-foreground mt-4">Select a child to manage their documents.</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -124,7 +130,7 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <AppStateProvider> {/* AppStateProvider handles child selection and profiles */}
+    <AppStateProvider> 
         <DashboardContent />
     </AppStateProvider>
   );
