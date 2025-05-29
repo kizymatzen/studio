@@ -28,7 +28,7 @@ function LogBehaviorContent() {
 
     try {
       const db = getDbSafe();
-      const docRef = await addDoc(collection(db, 'behaviorLogs'), {
+      const docRef = await addDoc(collection(db, 'behaviors'), { // Renamed collection
         ...values,
         date: Timestamp.fromDate(values.date), // Convert JS Date to Firestore Timestamp
         parentId: user.uid,

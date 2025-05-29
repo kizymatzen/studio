@@ -53,7 +53,7 @@ function SuggestionsContent() {
       setLoadingLog(true);
       try {
         const db = getDbSafe();
-        const logDoc = await getDoc(doc(db, 'behaviorLogs', logId));
+        const logDoc = await getDoc(doc(db, 'behaviors', logId)); // Renamed collection
         if (logDoc.exists()) {
           setBehaviorLog({ id: logDoc.id, ...logDoc.data() } as BehaviorLog);
         } else {

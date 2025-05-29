@@ -47,7 +47,7 @@ export function RecentLogsList() {
     try {
       const db = getDbSafe();
       const q = query(
-        collection(db, 'behaviorLogs'),
+        collection(db, 'behaviors'), // Renamed collection
         where('childId', '==', selectedChild.id),
         orderBy('date', 'desc'),
         limit(10)
